@@ -1,0 +1,205 @@
+﻿@model List<Erkon.Models.UnitModel>
+@{
+	ViewData["Title"] = "Home Page";
+	List<int> airconTemperatureList = ViewBag.TemperatureListing;
+}
+
+<script type="text/javascript">
+	$(document).ready(function () {
+		setTimeout(periodicRefresh(), 5000);
+	});
+
+	var disableRefresh = false;
+
+	function periodicRefresh(){
+		const interval = setInterval(function () {
+			RefreshData();
+		}, 5000);
+	}
+
+	function ChangeState(elm)
+	{
+		let unitcode = $(elm).attr('code');
+		let state = !$(elm).prop('checked') ? '0' : '1'; 
+		let url = "/units/ChangeState?code=" + unitcode + "&state=" + state;
+		
+		$.ajax({
+			type: "GET",
+			url: url, 
+			beforeSend: function () {				
+				processing(unitcode, true, "turning " + (state == '1' ? "on" : "off") + "...");
+			},
+			success: function (response) {				
+				processing(unitcode, false);
+				DeviceState(state, unitcode, false);				
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				// TODO
+				debugger;
+			}
+		});
+	}
+
+	function DeviceState(state, deviceCode, changeElmValue)
+	{
+		let $elm = $("input[code='" + deviceCode + "']");
+		let header = $elm.closest(".unit").find(".unit-header");
+		let dropdownTemperature = $elm.closest(".unit").find(".unit-temperature");
+		let label = $elm.siblings("label");
+
+		if (state == '0') {
+			header.removeClass("bg-primary");
+			header.css("color", "black");
+			dropdownTemperature.attr("disabled", true);
+			label.html("Off");
+			$elm.prop('checked', false);
+		}
+		else {
+			header.addClass("bg-primary");
+			header.css("color", "white");
+			dropdownTemperature.attr("disabled", false);
+			label.html("On");
+			$elm.prop('checked', true);
+		}
+
+		if (changeElmValue)
+			$elm.prop('checked', (state == '1' ? true : false));
+	}
+
+	function ChangeTemperature(elm)
+	{
+		if (elm.value == "")
+		{
+			alert("Please select valid temperature.");
+			return false;
+		}
+
+		let unitcode = $(elm).attr('code');
+		let newTemperature = elm.value;
+		let url = "/units/ChangeTemperature?code=" + unitcode + "&temperature=" + newTemperature;
+
+		$.ajax({
+			type: "GET",
+			url: url,
+			beforeSend: function () {
+				processing(unitcode, true, "changing temperature... ");
+			},
+			success: function (response) {
+				processing(unitcode, false);
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				// TODO
+				debugger;
+			}
+		});
+	}
+
+	function RefreshData()
+	{
+		if (disableRefresh)
+			return;
+
+		let url = "/units/GetAllUnitInfo?roomnumber=" + $("[name='roomnumber']").val();
+
+		$.ajax({
+			type: "GET",
+			url: url,
+			dataType: 'json',
+			beforeSend: function () {
+				$(".lblRefresh").show();
+			},
+			success: function (response) {
+				$.each(response, function (index, item) {
+					let unitItem = $("div[unitcode='" + item.code + "']");
+					unitItem.find(".unit-temperature-label").html((item.temperature == '0' ? "NA" : item.temperature));
+					unitItem.find(".unit-humidity-label").html((item.humidity == '0' ? "NA" : item.humidity));
+					unitItem.find(".unit-temperature").val((item.temperatureAssigned ? item.temperatureAssigned : ""));
+					DeviceState(item.state, item.code, true);
+				});
+				$(".lblRefresh").hide();				
+			},
+			error: function (XMLHttpRequest, textStatus, errorThrown) {
+				$(".lblRefresh").html("Error retrieving data...");
+			}
+		});
+	}
+
+	function processing(code, show, message)
+	{
+		disableRefresh = show;
+
+		$("input[code='" + code + "']").attr("disabled", show);
+		$("select[code='" + code + "']").attr("disabled", show);
+
+		if (!show)
+			message = "";
+
+		$("div[unitcode='" + code + "']").find(".lblMessage").html(message);
+	}
+
+	function changeAllState(state)
+	{
+		if ($(".unit-state:" + (state ? "not(:checked)" : "checked")).length == 0) {
+			alert("There is no device to be turned " + (state ? "on." : "off."));
+			return;
+		}
+		if (confirm("Are you sure you wish to turn " + (state ? "on" : "off") + " all units?")){
+			let $units = $(".divUnit");
+			$.each($units, function (index, item) {
+				let stateElm = $(item).find(".unit-state");
+				let isOn = stateElm.prop('checked');
+				if (isOn == !state){
+					stateElm.prop('checked', state);
+					ChangeState(stateElm);
+				}
+			});
+		}
+	}
+
+</script>
+
+<div class="container-fluid mt-4">
+	<form method="get" action="/">
+		<div class="mb-3">
+			<label for="" class="form-label">Room Number</label>
+			<input type="text" class="form-control" maxlength="5" name="roomnumber" value="@ViewBag.RoomNumber">
+		</div>
+		<button type="button" class="btn btn-primary" name="submit" value="search" onclick="RefreshData()">Search or Refresh</button>
+		<button type="button" class="btn btn-info" name="submit" value="on" onclick="changeAllState(true)">Turn On All</button>
+		<button type="button" class="btn btn-danger" name="submit" value="off" onclick="changeAllState(false)">Turn Off All</button>
+		<span class="lblRefresh" style="color:gray; font-style:italic;display:none;">Refreshing data...</span>
+	</form>
+	<hr />
+    <div class="row justify-content-center">
+		@foreach (var unit in Model)
+		{
+			var unitState = unit.State == 1 ? true : false;
+			<div class="col-auto mb-3 divUnit" unitcode="@unit.Code">
+				<div class="card h-100 unit" style="width: 18rem">
+					<div class="card-header unit-header @(unitState ? "bg-primary" : "")" style="color: @(unitState ? "white" : "black")">@unit.RoomNumber <span class="lblMessage"></span></div>
+					<div class="card-body">
+						<div class="card-text">
+							<p>Id: @unit.Code</p>
+							<p>
+								<img src="/images/temperature.png" style="height:25px" /><span class="unit-temperature-label">@(unit.Temperature == 0 ? "NA" : unit.Temperature)</span>&nbsp;&nbsp;&nbsp;
+								<img src="/images/humidity.png" style="height:25px; padding-right:2px" /><span class="unit-humidity-label">@(unit.Humidity == 0 ? "NA" : unit.Humidity)</span></p>
+							<p>Location: @unit.RoomLocation</p>							
+						</div>
+					</div>
+					<div class="card-footer">
+						<div class="custom-control custom-switch">
+							<input code="@unit.Code" onclick="ChangeState(this)" type="checkbox" class="custom-control-input unit-state" id="i-@unit.Code" @(unitState ? "checked" : "")>
+							<label class="custom-control-label" for="i-@unit.Code">@(unitState ? "On" : "Off")</label>
+							<select code="@unit.Code" onchange="ChangeTemperature(this)" @(unitState ? "" : "disabled") class="custom-select unit-temperature" id="s-@unit.Code" style="width:100px;float:right; margin-top:-5px" value="@unit.Temperature">
+								<option value="">NA</option>
+								@for (var i = 0; i < airconTemperatureList.Count; i++){
+									<!option value="@airconTemperatureList[i]" @(unit.TemperatureAssigned == airconTemperatureList[i] ? "selected" : "")>@airconTemperatureList[i] &#x2103;</!option>
+								}
+							</select>
+						</div>
+					</div>
+				</div>
+			</div>
+		}
+    </div>
+</div>

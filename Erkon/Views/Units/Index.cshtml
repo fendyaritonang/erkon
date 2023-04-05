@@ -1,0 +1,28 @@
+﻿@model List<Erkon.Models.UnitModel>
+@{
+}
+
+<h1>Units</h1>
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>Code</th>
+			<th>Room Number</th>
+			<th>Room Location</th>
+			<th>Action</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var unit in Model)
+		{
+			<tr>
+				<td>@unit.Code</td>
+				<td>@unit.RoomNumber</td>
+				<td>@unit.RoomLocation</td>
+				<td><a href="/units/edit/@unit.Code">Edit</a></td>
+			</tr>
+		}		
+	</tbody>
+</table>
+<a href="/Units/add" class="btn btn-primary" tabindex="-1" role="button" aria-disabled="true">Add New Unit</a>

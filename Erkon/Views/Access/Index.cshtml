@@ -1,0 +1,30 @@
+﻿@model List<Erkon.Models.AccessModel>
+@{
+}
+
+<h1>Access</h1>
+
+<table class="table">
+	<thead>
+		<tr>
+			<th>User</th>
+			<th>Unit Code</th>
+			<th>Unit Room Number</th>
+			<th>Unit Room Location</th>
+			<th>Action</th>
+		</tr>
+	</thead>
+	<tbody>
+		@foreach (var access in Model)
+		{
+			<tr>
+				<td>@access.UserId</td>
+				<td>@access.UnitCode</td>
+				<td>@access.UnitRoomNumber</td>
+				<td>@access.UnitRoomLocation</td>
+				<td><a href="/Access/edit?userid=@access.UserId&unitcode=@access.UnitCode">Edit</a></td>
+			</tr>
+		}
+	</tbody>
+</table>
+<a href="/Access/Add" class="btn btn-primary" tabindex="-1" role="button" aria-disabled="true">Add New Access</a>

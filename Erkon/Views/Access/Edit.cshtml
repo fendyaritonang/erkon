@@ -1,0 +1,26 @@
+﻿@model Erkon.Models.AccessMaintenanceModel
+@{
+}
+
+<h1>Edit Access</h1>
+<form method="post" action="Edit">
+    <div class="mb-3">
+        <label for="" class="form-label">User Email</label>
+        <input type="text" class="form-control" asp-for="@Model.Access.UserId" maxlength="50" required>
+        <input type="hidden" class="form-control" asp-for="@Model.Access.UserIdOriginal" maxlength="50" required>
+    </div>
+    <div class="mb-3">
+        <label for="" class="form-label">Location</label>
+        <select class="form-control" asp-for="@Model.Access.UnitCode" required>
+            <option value="">[Please select]</option>
+            <option value="*">All Access</option>
+            @foreach (var option in Model.Units)
+            {
+                <option value="@option.Code">@option.RoomNumber (@option.RoomLocation)</option>
+            }
+        </select>
+        <input type="hidden" class="form-control" asp-for="@Model.Access.UnitCodeOriginal" maxlength="50" required>
+    </div>
+    <button type="submit" class="btn btn-primary" name="submit" value="submit">Submit</button>
+    <button type="submit" class="btn btn-danger" name="submit" value="inactivate" onclick="return confirm('Are you sure you want to remove this access?')">Remove</button>
+</form>

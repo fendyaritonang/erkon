@@ -1,0 +1,24 @@
+﻿@model Erkon.Models.AccessMaintenanceModel
+@{
+    
+}
+
+<h1>Add New Access</h1>
+<form method="post" action="Add">
+    <div class="mb-3">
+        <label for="" class="form-label">User Email</label>
+        <input type="text" class="form-control" asp-for="@Model.Access.UserId" maxlength="50" required>
+    </div>
+    <div class="mb-3">
+        <label for="" class="form-label">Location</label>
+        <select class="form-control" asp-for="@Model.Access.UnitCode" required>
+            <option value="">[Please select]</option>
+            <option value="*">All Access</option>
+            @foreach (var option in Model.Units)
+            {
+                <option value="@option.Code">@option.RoomNumber (@option.RoomLocation)</option>
+            }
+        </select>
+    </div>    
+    <button type="submit" class="btn btn-primary">Submit</button>
+</form>
